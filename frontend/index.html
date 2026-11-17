@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CloudOps Incident Manager dashboard">
+  <title>CloudOps Incident Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#dashboard">
+        <span class="brand-mark">!</span>
+        <span>CloudOps Incident Manager</span>
+      </a>
+
+  <div class="user">
+    <span>Swathi · DevOps Team</span>
+    <span class="avatar">S</span>
+  </div>
+</header>
+
+<section class="dashboard" id="dashboard">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Operations overview</p>
+      <h1>Open incidents</h1>
+    </div>
+
+    <button class="button button-primary" id="open-create-modal" type="button">
+      + Create incident
+    </button>
+  </div>
+
+  <section class="stats">
+    <article class="stat-card">
+      <p>Open incidents</p>
+      <strong id="open-count">0</strong>
+    </article>
+
+    <article class="stat-card critical">
+      <p>Critical incidents</p>
+      <strong id="critical-count">0</strong>
+    </article>
+
+    <article class="stat-card">
+      <p>Resolved today</p>
+      <strong id="resolved-count">0</strong>
+    </article>
+  </section>
+
+  <section class="incident-panel">
+    <div class="panel-heading">
+      <h2>Active incidents</h2>
+      <span class="live-indicator"><i></i>Live</span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Incident</th>
+            <th>Severity</th>
+            <th>Service</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="incidents-table-body"></tbody>
+      </table>
+    </div>
+
+    <p class="empty-state" id="empty-state" hidden>
+      No active incidents. Create one to get started.
+    </p>
+  </section>
+</section>
+  </main>
+
+  <dialog id="incident-dialog">
+    <form id="incident-form">
+      <div class="dialog-heading">
+        <h2 id="dialog-title">Create incident</h2>
+        <button class="icon-button" id="close-dialog" type="button">×</button>
+      </div>
+
+  <input id="incident-id" type="hidden">
+
+  <label>
+    Title
+    <input id="title" name="title" required maxlength="120"
+      placeholder="Payment API returning 500">
+  </label>
+
+  <label>
+    Description
+    <textarea id="description" name="description" required maxlength="500"
+      placeholder="Payment requests are intermittently failing."></textarea>
+  </label>
+
+  <div class="form-grid">
+    <label>
+      Severity
+      <select id="severity" name="severity">
+        <option value="CRITICAL">Critical</option>
+        <option value="HIGH">High</option>
+        <option value="WARNING">Warning</option>
+      </select>
+    </label>
+
+    <label>
+      Service
+      <input id="service" name="service" required maxlength="80"
+        placeholder="Payment API">
+    </label>
+  </div>
+
+  <label>
+    Status
+    <select id="status" name="status">
+      <option value="INVESTIGATING">Investigating</option>
+      <option value="IDENTIFIED">Identified</option>
+      <option value="MITIGATING">Mitigating</option>
+      <option value="RESOLVED">Resolved</option>
+    </select>
+  </label>
+
+  <div class="dialog-actions">
+    <button class="button button-secondary" id="cancel-dialog" type="button">
+      Cancel
+    </button>
+    <button class="button button-primary" id="submit-button" type="submit">
+      Create incident
+    </button>
+  </div>
+</form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
