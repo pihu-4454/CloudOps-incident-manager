@@ -1,0 +1,379 @@
+{
+  "info": {
+    "name": "CloudOps Incident API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response time under 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create incident",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test(\"Incident has an id\", () => pm.expect(body).to.have.property(\"id\"));",
+              "",
+              "pm.environment.set(\"incident_id\", body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/incidents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Database connection timeout\",\n  \"description\": \"API unable to reach PostgreSQL\",\n  \"severity\": \"HIGH\",\n  \"status\": \"INVESTIGATING\",\n  \"service\": \"payments-api\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "List incidents",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is an array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/incidents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get incident by ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+              "",
+              "pm.test(\"Correct incident returned\", () => {",
+              "  pm.expect(String(pm.response.json().id)).to.eql(String(pm.environment.get(\"incident_id\")));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/incidents/{{incident_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents",
+            "{{incident_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update incident (PUT - resolve)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"resolved_at is set by the server\", () => {",
+              "  pm.expect(pm.response.json().resolved_at).to.be.a(\"string\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/incidents/{{incident_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents",
+            "{{incident_id}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"RESOLVED\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete incident",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));",
+              "",
+              "pm.test(\"Response body is empty\", () => {",
+              "  pm.expect(pm.response.text()).to.eql(\"\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/incidents/{{incident_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents",
+            "{{incident_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get incident after delete (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+              "",
+              "pm.test(\"Error message is correct\", () => {",
+              "  pm.expect(pm.response.json().detail).to.eql(\"Incident not found\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/incidents/{{incident_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents",
+            "{{incident_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Negative - missing required fields (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+              "",
+              "const body = pm.response.json();",
+              "pm.test(\"Response contains validation details\", () => {",
+              "  pm.expect(body).to.have.property(\"detail\");",
+              "  pm.expect(body.detail).to.be.an(\"array\").that.is.not.empty;",
+              "});",
+              "",
+              "pm.test(\"Error points to a missing field\", () => {",
+              "  pm.expect(body.detail[0].type).to.eql(\"missing\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/incidents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"This request is missing required fields\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Negative - non-existent incident (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+              "",
+              "pm.test(\"Error message is correct\", () => {",
+              "  pm.expect(pm.response.json().detail).to.eql(\"Incident not found\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/incidents/99999",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents",
+            "99999"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Negative - invalid severity (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+              "",
+              "pm.test(\"Validation error is on severity\", () => {",
+              "  const detail = pm.response.json().detail;",
+              "  pm.expect(detail[0].loc).to.eql([\"body\", \"severity\"]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/incidents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "incidents"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Invalid severity test\",\n  \"description\": \"Severity value is not allowed\",\n  \"severity\": \"banana\",\n  \"status\": \"INVESTIGATING\",\n  \"service\": \"payments-api\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # .env is gitignored, so CI creates its own with throwaway test credentials.
+      # docker-compose.yml reads these for the db and app services.
+      - name: Create .env for CI
+        run: |
+          cat > .env << 'EOF'
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=postgres
+          POSTGRES_DB=cloudops_incidents
+          EOF
+
+      - name: Build and start the stack
+        run: docker compose up -d --build --wait
+
+      # The app container has no Docker healthcheck, so --wait only guarantees
+      # it has started. Poll the real health endpoint before running tests.
+      - name: Wait for API health endpoint
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/api/health; then
+              echo
+              echo "API is healthy"
+              exit 0
+            fi
+            echo "Waiting for API... ($i/30)"
+            sleep 2
+          done
+          echo "API did not become healthy in time"
+          exit 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman collection with Newman
+        run: |
+          newman run tests/postman/incident-api.postman_collection.json \
+            -e tests/postman/local.postman_environment.json \
+            --reporters cli,junit \
+            --reporter-junit-export newman-results.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-results
+          path: newman-results.xml
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+        

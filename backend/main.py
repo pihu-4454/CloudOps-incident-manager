@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
         ) from exc
     yield
 
-    # closes all database connections  
+    # closes all database connections
     engine.dispose()
 
 
@@ -78,6 +78,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
 
 @app.get("/api/live")
 def liveness_check() -> dict[str, str]:
@@ -132,6 +133,20 @@ def create_incident(incident: IncidentCreate) -> dict:
                 "resolved_at": now if values["status"] == "RESOLVED" else None,
             },
         ).mappings().one()
+
+    return dict(row)
+
+
+@app.get("/api/incidents/{incident_id}", response_model=Incident)
+def get_incident(incident_id: int) -> dict:
+    with engine.connect() as connection:
+        row = connection.execute(
+            text("SELECT * FROM incidents WHERE id = :incident_id"),
+            {"incident_id": incident_id},
+        ).mappings().one_or_none()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
 
     return dict(row)
 
@@ -196,6 +211,7 @@ def delete_incident(incident_id: int) -> Response:
 
 
 # Serve the existing frontend and API from one origin.
+# Keep this LAST: it catches every path that has no matching route above.
 app.mount(
     "/",
     StaticFiles(directory=PROJECT_ROOT / "frontend", html=True),
